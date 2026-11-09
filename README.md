@@ -16,7 +16,7 @@
 
 **简体中文** · [English](README.en.md)
 
-<img src="docs/assets/flow.svg" width="100%" alt="四个阶段挂在你手中的一根缰绳上：spike-design 出方案、按切片实现、risk-walkthrough 讲重难点、quality-review 审查" />
+<img src="docs/assets/flow.svg" width="100%" alt="五个阶段挂在你手中的一根缰绳上：big-picture-review 定方向、spike-design 出方案、按切片实现、risk-walkthrough 讲重难点、quality-review 审查" />
 
 </div>
 

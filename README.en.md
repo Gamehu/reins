@@ -16,7 +16,7 @@ Four agent skills that keep a coding agent on the plan you approved: get the big
 
 [简体中文](README.md) · **English**
 
-<img src="docs/assets/flow.svg" width="100%" alt="Four stages hang from one line you hold: plan with spike-design, build slice by slice, walk the risks with risk-walkthrough, review with quality-review" />
+<img src="docs/assets/flow.svg" width="100%" alt="Five stages hang from one line you hold: settle the direction with big-picture-review, plan with spike-design, build slice by slice, walk the risks with risk-walkthrough, review with quality-review" />
 
 </div>
 
