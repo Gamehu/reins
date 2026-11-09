@@ -6,7 +6,7 @@
 
 **AI does the running. You hold the reins.**
 
-Three agent skills that keep a coding agent on the plan you approved: plan first, build in traceable slices, then check every decision against the plan.
+Four agent skills that keep a coding agent on the plan you approved: get the big picture and the direction right, plan, build in traceable slices, then check every decision against the plan.
 
 [![License: MIT](https://img.shields.io/badge/license-MIT-f0953a.svg)](LICENSE)
 ![Claude Code](https://img.shields.io/badge/Claude%20Code-ready-3dd6a3.svg)
@@ -26,6 +26,8 @@ Coding agents are fast and capable. Left alone, they also wander:
 
 | Left alone, the agent… | With reins… |
 |---|---|
+| polishes details while the overall direction is wrong | walks one real scenario end to end first and **says so** when the direction is off; detail goes only where it changes the outcome |
+| accepts a pasted review or proposal wholesale | judges each item as **holds / partly holds / does not hold / needs verification**, and whether it affects the direction or a detail |
 | adds an interface "in case we need it later" | every new abstraction sits in a budget that starts at **0** and needs a reason |
 | pulls in a library or a cache nobody asked for | each new dependency is justified *before* any code is written |
 | quietly rebuilds data that another system owns | the **source of truth** is written into the plan and checked first in review |
@@ -34,9 +36,19 @@ Coding agents are fast and capable. Left alone, they also wander:
 
 reins does not make the agent slower or dumber. It makes sure every turn it takes traces back to a decision **you** made.
 
-## The three skills
+## The four skills
 
-### 1 · `spike-design`: plan before code
+### 1 · `big-picture-review`: the whole picture before the details
+
+For when the direction is still open, a plan is going through revisions, or you need to judge whether a review is sound. It does not look at code; it answers "is this the right direction?"
+
+- Walks one representative scenario from its trigger **to the final outcome**, and raises a missing step or a false premise first
+- Gives **the same scrutiny** to the current implementation and to claims from you, experts, documents and AI, without inventing objections to look independent
+- Ties every substantial mechanism to a **present** scenario; when extensibility is a requirement, walks through adding one more source or channel and absorbs the differences in configuration where it can
+- Keeps a **numbered record** of confirmed decisions and asks before changing one; when the same misunderstanding is corrected twice, it stops and restates its understanding
+- Hands off to `spike-design` once the direction is settled
+
+### 2 · `spike-design`: plan before code
 
 Turns a requirement, POC or spike into a plan you can actually review, and writes **no code** until you approve it.
 
@@ -47,7 +59,7 @@ Turns a requirement, POC or spike into a plan you can actually review, and write
 - An **abstraction and dependency budget** that defaults to zero
 - **Slices** of about 300 lines, each with numbered decisions (`S1-1`, `S1-2`…) that implementation and review trace back to
 
-### 2 · `risk-walkthrough`: show me the hard parts
+### 3 · `risk-walkthrough`: show me the hard parts
 
 Code is too long to read line by line, so after each slice the agent explains only what needs a human eye, and lists where it drifted.
 
@@ -55,7 +67,7 @@ Code is too long to read line by line, so after each slice the agent explains on
 - Deviation check, in this order: **source of truth** → **skeleton** → **budget** → non-goals → slice boundaries
 - Every deviation is labeled either *needs your decision* or *already in the plan* (with the plan's file and line). Nothing in between.
 
-### 3 · `quality-review`: an independent review
+### 4 · `quality-review`: an independent review
 
 A reviewer with no memory of how the code was written. It reports and never edits.
 
@@ -103,16 +115,16 @@ A reviewer with no memory of how the code was written. It reports and never edit
 git clone https://github.com/Gamehu/reins.git ~/reins
 ```
 
-Link the skills into the global skill folder of each tool you use:
+Link the four skills into the global skill folder of each tool you use:
 
 ```bash
 # Claude Code (OpenCode reads this folder too)
 mkdir -p ~/.claude/skills
-for s in spike-design risk-walkthrough quality-review; do ln -s ~/reins/skills/$s ~/.claude/skills/$s; done
+for s in big-picture-review spike-design risk-walkthrough quality-review; do ln -s ~/reins/skills/$s ~/.claude/skills/$s; done
 
 # Codex and OpenCode
 mkdir -p ~/.agents/skills
-for s in spike-design risk-walkthrough quality-review; do ln -s ~/reins/skills/$s ~/.agents/skills/$s; done
+for s in big-picture-review spike-design risk-walkthrough quality-review; do ln -s ~/reins/skills/$s ~/.agents/skills/$s; done
 ```
 
 To use them in a single project only, link into that project's `.claude/skills/` or `.agents/skills/` instead. `git pull` keeps every tool up to date.
@@ -121,7 +133,8 @@ To use them in a single project only, link into that project's `.claude/skills/`
 
 ```mermaid
 flowchart LR
-  R["Requirement"] --> P["spike-design"]
+  R["Requirement"] --> G["big-picture-review"]
+  G -- "direction settled" --> P["spike-design"]
   P -- "you approve" --> B["Build one slice"]
   B -- "off-plan decision?<br/>stop and ask" --> P
   B --> W["risk-walkthrough"]
@@ -129,15 +142,15 @@ flowchart LR
   Q -- "you pick what to fix" --> B
 ```
 
-Skills trigger on their own when what you say matches their description, such as *"let's discuss the plan first"* or *"review this"*. At the hand-offs it is more reliable to name them:
+Skills trigger on their own when what you say matches their description, such as *"is this plan sound?"*, *"let's discuss the plan first"* or *"review this"*. At the hand-offs it is more reliable to name them:
 
-- **Claude Code**: `/spike-design`, `/risk-walkthrough`, `/quality-review`
+- **Claude Code**: `/big-picture-review`, `/spike-design`, `/risk-walkthrough`, `/quality-review`
 - **Codex / OpenCode**: *"use spike-design to plan this"*
 
 Tip: write the order into your project's `CLAUDE.md` or `AGENTS.md`:
 
 ```markdown
-- Technical plans come from `spike-design`. After implementing, run `risk-walkthrough`, then `quality-review`.
+- Plans whose direction is still open, and outside reviews, go through `big-picture-review`. Technical plans come from `spike-design`. After implementing, run `risk-walkthrough`, then `quality-review`.
 ```
 
 ## Principles
@@ -150,7 +163,7 @@ Tip: write the order into your project's `CLAUDE.md` or `AGENTS.md`:
 
 ## Works with superpowers
 
-If the requirement itself is still fuzzy, clarify it first with [superpowers](https://github.com/obra/superpowers)' `brainstorming`. Once its design doc is approved, go to `spike-design` instead of `writing-plans`. `spike-design` adopts the goals, non-goals and constraints already written there and only asks about the gaps.
+If the requirement itself is still fuzzy, clarify it first with [superpowers](https://github.com/obra/superpowers)' `brainstorming`. To review or revise the overall approach, use `big-picture-review`. Once its design doc is approved, go to `spike-design` instead of `writing-plans`. `spike-design` adopts the goals, non-goals and constraints already written there and only asks about the gaps.
 
 ## Optional extras
 
@@ -169,6 +182,12 @@ Built-in language rules cover [Java](skills/quality-review/references/java.md) a
 <summary><b>Isn't this a lot of process for a small change?</b></summary>
 
 The ceremony scales down. A plan for a small task is short, small diffs are reviewed inline without a subagent, and a missing plan is simply noted instead of blocking the review.
+</details>
+
+<details>
+<summary><b>How is <code>big-picture-review</code> different from <code>spike-design</code>?</b></summary>
+
+They cover different stages. `big-picture-review` asks "is this the right direction?" while the architecture and the plan are still being discussed and reviewed. `spike-design` asks "how does this become code?" once the direction is settled, and produces the skeleton, budget and slices. Entering `spike-design` before the direction is settled tends to circle around interface signatures and slice sizes while nobody checks the direction.
 </details>
 
 <details>
@@ -193,6 +212,7 @@ No. `risk-walkthrough` and `quality-review` only report. You answer by number ("
 
 ```
 skills/
+  big-picture-review/SKILL.md
   spike-design/SKILL.md
   risk-walkthrough/SKILL.md
   quality-review/

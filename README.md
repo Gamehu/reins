@@ -6,7 +6,7 @@
 
 **AI 负责奔跑，缰绳握在你手里。**
 
-三个 Agent Skill，让编程助手始终走在你确认过的方案上：先定方案，按可追溯的切片实现，再逐条对照方案审查。
+四个 Agent Skill，让编程助手始终走在你确认过的方案上：先看清全局、定准方向，再定方案，按可追溯的切片实现，最后逐条对照方案审查。
 
 [![License: MIT](https://img.shields.io/badge/license-MIT-f0953a.svg)](LICENSE)
 ![Claude Code](https://img.shields.io/badge/Claude%20Code-ready-3dd6a3.svg)
@@ -26,6 +26,8 @@
 
 | 放任不管时，AI 会… | 有了 reins… |
 |---|---|
+| 钻进细节反复打磨，整体方向却是错的 | 先拿一个真实场景从头走到尾，大方向不对**先说**，细节只花在影响结果的地方 |
+| 你贴来的评审或方案，照单全收 | 逐条判断**成立 / 部分成立 / 不成立 / 需要核实**，并说明影响的是方向还是细节 |
 | 加一个“以后可能用到”的接口 | 每个新增抽象都要进预算表，预算默认为 **0**，没有理由就删 |
 | 引入没人要的库或缓存 | 每个新依赖在写代码**之前**就要说明为什么 |
 | 悄悄在本地重建一份别的系统负责的数据 | 方案里写明**真源**，审查时第一个核对 |
@@ -34,9 +36,19 @@
 
 reins 不会让 AI 变慢或变笨，只是保证它的每一步都能追回到**你**做过的决定。
 
-## 三个 skill
+## 四个 skill
 
-### 1 · `spike-design`：先方案，后代码
+### 1 · `big-picture-review`：先看全局，再看细节
+
+方向还没定、方案在反复讨论，或者要判断一份评审是否合理时用。它不关心代码，只回答“这个方向对不对”。
+
+- 用一个有代表性的场景从触发**走到最终结果**，大方向缺步骤或前提错了，先说这个
+- 现有实现、用户、专家、文档和 AI 的说法**同等审视**，也不为了显得独立而硬挑刺
+- 每个重要机制都要对应一个**当前**场景；扩展性是需求时，走一遍“再接入一个新源或新渠道”，差异尽量靠配置吸收
+- 已确认的决策**编号记录**，改动前先问你；同一个误解被纠正两次，就停下来复述理解
+- 方向定稿后交给 `spike-design`
+
+### 2 · `spike-design`：先方案，后代码
 
 把需求、POC 或 spike 整理成真正能审的方案。你确认之前，**不写任何代码**。
 
@@ -47,7 +59,7 @@ reins 不会让 AI 变慢或变笨，只是保证它的每一步都能追回到*
 - **抽象与依赖预算**，默认为 0
 - 约 300 行一片的**切片计划**，每片的决策带编号（`S1-1`、`S1-2`…），实现和审查都按编号对照
 
-### 2 · `risk-walkthrough`：只讲最需要人看的部分
+### 3 · `risk-walkthrough`：只讲最需要人看的部分
 
 代码太多没法逐行看，所以每个切片完成后，只讲需要人判断的地方，并列出偏离。
 
@@ -55,7 +67,7 @@ reins 不会让 AI 变慢或变笨，只是保证它的每一步都能追回到*
 - 偏离检查按顺序进行：**真源** → **骨架** → **预算** → 非目标 → 切片边界
 - 每条偏离只能标“需要你决定”或“已在方案内”（附方案的文件和行号），没有中间状态
 
-### 3 · `quality-review`：独立审查
+### 4 · `quality-review`：独立审查
 
 审查者不知道代码是怎么写出来的。只报告，不修改。
 
@@ -101,16 +113,16 @@ reins 不会让 AI 变慢或变笨，只是保证它的每一步都能追回到*
 git clone https://github.com/Gamehu/reins.git ~/reins
 ```
 
-把三个 skill 链接到所用工具的全局 skill 目录：
+把四个 skill 链接到所用工具的全局 skill 目录：
 
 ```bash
 # Claude Code（OpenCode 也会读取这里）
 mkdir -p ~/.claude/skills
-for s in spike-design risk-walkthrough quality-review; do ln -s ~/reins/skills/$s ~/.claude/skills/$s; done
+for s in big-picture-review spike-design risk-walkthrough quality-review; do ln -s ~/reins/skills/$s ~/.claude/skills/$s; done
 
 # Codex 和 OpenCode
 mkdir -p ~/.agents/skills
-for s in spike-design risk-walkthrough quality-review; do ln -s ~/reins/skills/$s ~/.agents/skills/$s; done
+for s in big-picture-review spike-design risk-walkthrough quality-review; do ln -s ~/reins/skills/$s ~/.agents/skills/$s; done
 ```
 
 只想在某个项目里用，就链接到该项目的 `.claude/skills/` 或 `.agents/skills/`。以后 `git pull` 一次，所有工具同时更新。
@@ -119,7 +131,8 @@ for s in spike-design risk-walkthrough quality-review; do ln -s ~/reins/skills/$
 
 ```mermaid
 flowchart LR
-  R["需求"] --> P["spike-design"]
+  R["需求"] --> G["big-picture-review"]
+  G -- "方向定稿" --> P["spike-design"]
   P -- "你确认方案" --> B["实现一个切片"]
   B -- "出现方案外决策？<br/>停下来问" --> P
   B --> W["risk-walkthrough"]
@@ -127,15 +140,15 @@ flowchart LR
   Q -- "你决定改哪些" --> B
 ```
 
-你说的话和 skill 的描述匹配时会自动触发，比如“先讨论方案”“review 一下”。在环节衔接处，直接点名更稳：
+你说的话和 skill 的描述匹配时会自动触发，比如“这份方案合理吗”“先讨论方案”“review 一下”。在环节衔接处，直接点名更稳：
 
-- **Claude Code**：`/spike-design`、`/risk-walkthrough`、`/quality-review`
+- **Claude Code**：`/big-picture-review`、`/spike-design`、`/risk-walkthrough`、`/quality-review`
 - **Codex / OpenCode**：“用 spike-design 出方案”
 
 建议在项目的 `CLAUDE.md` 或 `AGENTS.md` 里写明顺序：
 
 ```markdown
-- 技术方案用 `spike-design` 产出；实现后用 `risk-walkthrough` 对照方案，再用 `quality-review` 审查。
+- 方向未定的方案和外部评审用 `big-picture-review` 审查；技术方案用 `spike-design` 产出；实现后用 `risk-walkthrough` 对照方案，再用 `quality-review` 审查。
 ```
 
 ## 原则
@@ -148,7 +161,7 @@ flowchart LR
 
 ## 搭配 superpowers
 
-需求本身还不清楚时，先用 [superpowers](https://github.com/obra/superpowers) 的 `brainstorming` 澄清；设计文档通过后进入 `spike-design`，不进入 `writing-plans`。`spike-design` 会直接采用文档里已有的目标、非目标和约束，只就缺口提问。
+需求本身还不清楚时，先用 [superpowers](https://github.com/obra/superpowers) 的 `brainstorming` 澄清；需要审查或修订整体方案时用 `big-picture-review`；设计文档通过后进入 `spike-design`，不进入 `writing-plans`。`spike-design` 会直接采用文档里已有的目标、非目标和约束，只就缺口提问。
 
 ## 可选扩展
 
@@ -167,6 +180,12 @@ flowchart LR
 <summary><b>小改动也要走这么多流程吗？</b></summary>
 
 流程会随规模缩小。小任务的方案很短；小改动由主流程直接审查，不起 subagent；找不到方案时只注明“无方案，未对照”，不阻断审查。
+</details>
+
+<details>
+<summary><b><code>big-picture-review</code> 和 <code>spike-design</code> 有什么区别？</b></summary>
+
+阶段不同。`big-picture-review` 回答“方向对不对”，用在架构和方案还在讨论、审查的时候；`spike-design` 回答“怎么落到代码”，用在方向定稿之后，产出骨架、预算和切片。方向没定就进入 `spike-design`，容易在接口签名、切片规模这类细节上打转，而大方向的问题没人看。
 </details>
 
 <details>
@@ -191,6 +210,7 @@ flowchart LR
 
 ```
 skills/
+  big-picture-review/SKILL.md
   spike-design/SKILL.md
   risk-walkthrough/SKILL.md
   quality-review/
